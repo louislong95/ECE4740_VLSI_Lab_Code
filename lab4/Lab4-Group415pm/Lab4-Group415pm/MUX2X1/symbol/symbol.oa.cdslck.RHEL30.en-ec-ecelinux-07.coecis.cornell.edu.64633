@@ -1,0 +1,16 @@
+#
+# Edit Lock-Stake file. CAUTION: Please do not change.
+#
+# Information about current Edit Lock Owner.
+#
+LockStakeVersion               1.1
+LoginName                      yx455
+HostName                       en-ec-ecelinux-07.coecis.cornell.edu
+ProcessIdentifier              64633
+ProcessCreationTime_UTC        1587658372
+ProcessCreationTime_Readable   Thu Apr 23 12:12:52 2020 EDT
+AppIdentifier                  OA File System Design Manager
+OSType                         unix
+ReasonForPlacingEditLock       OpenAccess edit lock
+FilePathUsedToEditLock         /home/yx455/Cadence/ece4740_yyyy_fir/MUX2X1/symbol/symbol.oa.cdslck
+TimeEditLocked                 Thu Apr 23 12:25:39 2020 EDT

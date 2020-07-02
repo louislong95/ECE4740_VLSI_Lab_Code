@@ -1,0 +1,308 @@
+// VerilogA for ece4740_yyyy_fir, lab4_signalgen, veriloga
+`include "constants.vams"
+`include "disciplines.vams"
+
+// hexdecimal codebook
+`define H0  lo,lo,lo,lo 
+`define H1  hi,lo,lo,lo 
+`define H2  lo,hi,lo,lo 
+`define H3  hi,hi,lo,lo 
+`define H4  lo,lo,hi,lo 
+`define H5  hi,lo,hi,lo 
+`define H6  lo,hi,hi,lo 
+`define H7  hi,hi,hi,lo 
+`define H8  lo,lo,lo,hi 
+`define H9  hi,lo,lo,hi 
+`define HA  lo,hi,lo,hi 
+`define HB  hi,hi,lo,hi 
+`define HC  lo,lo,hi,hi 
+`define HD  hi,lo,hi,hi 
+`define HE  lo,hi,hi,hi 
+`define HF  hi,hi,hi,hi 
+
+module lab4_signalgen(A,B,Cin);
+output [0:15] A;
+output [0:15] B;
+output Cin;
+voltage [0:15] A;
+voltage [0:15] B;
+voltage Cin;
+
+parameter real hi = 1.2;
+parameter real lo = 0.0;
+parameter real tr = 10p from (0:inf);
+parameter real tf = 10p from (0:inf);
+parameter real cp = 2n  from (0:inf);
+
+real Atemp[0:15];
+real Btemp[0:15];
+real Cintemp;
+
+//----------------------------------------------------------
+// test case list
+//----------------------------------------------------------
+// k0: clear
+real k0_A[0:15] = {`H0,`H0,`H0,`H0};
+real k0_B[0:15] = {`H0,`H0,`H0,`H0};
+real k0_Cin = lo;
+
+// k1: preset
+real k1_A[0:15] = {`HF,`HF,`HF,`HF};
+real k1_B[0:15] = {`HF,`HF,`HF,`HF};
+real k1_Cin = hi;
+
+// k2: worst carry out LH
+real k2_A[0:15] = {`HF,`HF,`HF,`H7};
+real k2_B[0:15] = {`H1,`H0,`H0,`H0};
+real k2_Cin = lo;
+
+// k3: worst carry out HL
+real k3_A[0:15] = {`H0,`H0,`H0,`H8};
+real k3_B[0:15] = {`HE,`HF,`HF,`HF};
+real k3_Cin = lo;
+
+// k4: basic addition 0
+real k4_A[0:15] = {`H6,`H1,`H2,`H7};
+real k4_B[0:15] = {`H2,`H2,`H7,`H0};
+real k4_Cin = lo;
+
+// k5: basic addition 1
+real k5_A[0:15] = {`HD,`HA,`HE,`HD};
+real k5_B[0:15] = {`H1,`H2,`H3,`H4};
+real k5_Cin = lo;
+
+// k6: basic addition 2
+real k6_A[0:15] = {`HE,`HC,`HA,`HF};
+real k6_B[0:15] = {`HE,`HF,`HF,`HE};
+real k6_Cin = hi;
+
+// k7: basic addition ov
+real k7_A[0:15] = {`H8,`H4,`HD,`H0};
+real k7_B[0:15] = {`H8,`H7,`H5,`HE};
+real k7_Cin = hi;
+
+// k8: carry skip hi
+real k8_A[0:15] = {`H0,`H0,`H0,`H0};
+real k8_B[0:15] = {`HF,`HF,`HF,`HF};
+real k8_Cin = hi;
+
+// k9: carry skip lo
+real k9_A[0:15] = {`H0,`H0,`H0,`H0};
+real k9_B[0:15] = {`HF,`HF,`HF,`HF};
+real k9_Cin = lo;
+
+// k10: clear
+real k10_A[0:15] = {`H0,`H0,`H0,`H0};
+real k10_B[0:15] = {`H0,`H0,`H0,`H0};
+real k10_Cin = lo;
+
+// k11: preset
+real k11_A[0:15] = {`HF,`HF,`HF,`HF};
+real k11_B[0:15] = {`HF,`HF,`HF,`HF};
+real k11_Cin = hi;
+
+// k12: best delay LH
+real k12_A[0:15] = {`H0,`H0,`H0,`H0};
+real k12_B[0:15] = {`H1,`H0,`H0,`H0};
+real k12_Cin = lo;
+
+// k13: best delay HL
+real k13_A[0:15] = {`H0,`H0,`H0,`H0};
+real k13_B[0:15] = {`H0,`H0,`H0,`H0};
+real k13_Cin = lo;
+
+
+//----------------------------------------------------------
+// test case sequence
+//----------------------------------------------------------
+// carry skip test
+real k8_next = 9; //0ns
+real k9_next = 4; //2ns
+// basic addition test
+real k4_next = 5; //4ns
+real k5_next = 6; //6ns
+real k6_next = 7; //8ns
+real k7_next = 0; //10ns
+// worst delay test
+real k0_next = 2; //12ns
+real k2_next = 1; //14ns, actual LH
+real k1_next = 3; //16ns
+real k3_next = 10;//18ns, actual HL
+// best dealy test
+real k10_next = 12;//20ns
+real k12_next = 11;//22ns, actual LH
+real k11_next = 13;//24ns
+real k13_next = 8; //26ns, actual HL, loop
+
+//----------------------------------------------------------
+// test source
+//----------------------------------------------------------
+
+// state counter
+real k = 0;
+
+genvar i;
+integer x;
+
+analog begin
+	// initial value
+	@(initial_step) begin
+		for(x=0;x<16;x=x+1) begin
+			Atemp[x] = lo;
+			Btemp[x] = lo;
+		end
+		Cintemp = lo;
+		k = 8; // start at carry skip test
+	end
+	
+	// test stimulus
+	@(timer(0n,cp))	begin
+	// case output 
+		case(k)
+		// k0
+		0: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k0_A[x];
+				Btemp[x] = k0_B[x];
+			end
+			Cintemp = k0_Cin;
+			k = k0_next;
+		end
+		// k1
+		1: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k1_A[x];
+				Btemp[x] = k1_B[x];
+			end
+			Cintemp =  k1_Cin;
+			k = k1_next; 
+		end
+		// k2
+		2: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k2_A[x];
+				Btemp[x] = k2_B[x];
+			end
+			Cintemp =  k2_Cin;
+			k = k2_next;
+		end
+		// k3
+		3: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k3_A[x];
+				Btemp[x] = k3_B[x];
+			end
+			Cintemp =  k3_Cin;
+			k = k3_next;
+		end
+		// k4
+		4: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k4_A[x];
+				Btemp[x] = k4_B[x];
+			end
+			Cintemp = k4_Cin;
+			k = k4_next;
+		end
+		// k5
+		5: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k5_A[x];
+				Btemp[x] = k5_B[x];
+			end
+			Cintemp =  k5_Cin;
+			k = k5_next;
+		end
+		// k6
+		6: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k6_A[x];
+				Btemp[x] = k6_B[x];
+			end
+			Cintemp =  k6_Cin;
+			k = k6_next;
+		end
+		// k7
+		7: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k7_A[x];
+				Btemp[x] = k7_B[x];
+			end
+			Cintemp =  k7_Cin;
+			k = k7_next;
+		end
+		// k8
+		8: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k8_A[x];
+				Btemp[x] = k8_B[x];
+			end
+			Cintemp =  k8_Cin;
+			k = k8_next;
+		end
+		// k9
+		9: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k9_A[x];
+				Btemp[x] = k9_B[x];
+			end
+			Cintemp =  k9_Cin;
+			k = k9_next;
+		end
+		// k10
+		10: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k10_A[x];
+				Btemp[x] = k10_B[x];
+			end
+			Cintemp =  k10_Cin;
+			k = k10_next;
+		end
+		// k11
+		11: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k11_A[x];
+				Btemp[x] = k11_B[x];
+			end
+			Cintemp =  k11_Cin;
+			k = k11_next;
+		end
+		// k12
+		12: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k12_A[x];
+				Btemp[x] = k12_B[x];
+			end
+			Cintemp =  k12_Cin;
+			k = k12_next;
+		end
+		// k13
+		13: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = k13_A[x];
+				Btemp[x] = k13_B[x];
+			end
+			Cintemp =  k13_Cin;
+			k = k13_next;
+		end
+		// default : same as k0
+		default: begin
+			for(x=0;x<16;x=x+1) begin
+				Atemp[x] = lo;
+				Btemp[x] = lo;
+			end
+			Cintemp = lo;
+			k = 0;
+		end
+		endcase
+	end
+
+	// output DAC
+	for(i=0;i<16;i=i+1) begin
+		V(A[i]) <+ transition(Atemp[i], 0, tr, tf);
+		V(B[i]) <+ transition(Btemp[i], 0, tr, tf);
+	end
+	V(Cin) <+  transition(Cintemp, 0, tr, tf);
+end
+
+endmodule

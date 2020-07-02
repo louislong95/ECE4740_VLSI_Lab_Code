@@ -1,0 +1,49 @@
+// VerilogA for ece4740, lab2_signal_gen, veriloga
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module lab2_signal_gen(A,B);
+
+output A, B;
+voltage A,B;
+
+real		Atemp, Btemp;
+parameter real	clk_period = 1000p from (0:inf);
+parameter real	clk_period2 = 500p from (0:inf);
+parameter real	clk_high = 1.2;
+parameter real	clk_low = 0.0;
+parameter real	trise = 20p from [0:inf];
+parameter real	tfall = 20p from [0:inf];
+
+analog begin
+
+	@(initial_step) begin
+	 Atemp = 0;
+	 Btemp = 0;
+	end
+
+	@(timer(5n,clk_period))	begin
+		if (Atemp==0) begin 
+			Atemp = clk_high;
+		end
+		else begin
+			Atemp = clk_low;
+		end
+	end
+
+	@(timer(5n,clk_period2)) begin
+		if (Btemp==0) begin 
+			Btemp = clk_high;
+		end
+		else begin
+			Btemp = clk_low;
+		end
+	end
+
+	V(A)	 <+ transition(Atemp, 0, trise, tfall);
+	V(B)	 <+ transition(Btemp, 0, trise, tfall);
+	
+end
+
+endmodule

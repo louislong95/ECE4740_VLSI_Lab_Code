@@ -1,0 +1,16 @@
+#
+# Edit Lock-Stake file. CAUTION: Please do not change.
+#
+# Information about current Edit Lock Owner.
+#
+LockStakeVersion               1.1
+LoginName                      yd383
+HostName                       en-ec-ecelinux-01.coecis.cornell.edu
+ProcessIdentifier              49167
+ProcessCreationTime_UTC        1587168140
+ProcessCreationTime_Readable   Fri Apr 17 20:02:20 2020 EDT
+AppIdentifier                  OA File System Design Manager
+OSType                         unix
+ReasonForPlacingEditLock       OpenAccess edit lock
+FilePathUsedToEditLock         /home/yd383/Cadence/ece4740_yyyy_fir/INVX1/symbol/symbol.oa.cdslck
+TimeEditLocked                 Fri Apr 17 20:07:25 2020 EDT
